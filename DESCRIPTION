@@ -19,4 +19,8 @@ Imports:
     googleway,
     dplyr,
     purrr,
-    stringdist
+    stringdist,
+    tibble,
+    stringr,
+    furrr,
+    rlang
