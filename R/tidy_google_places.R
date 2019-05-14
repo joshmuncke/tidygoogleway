@@ -54,10 +54,7 @@
 #' @param key \code{string} A valid Google Developers Places API key.
 #'
 #' @export
-tidy_google_places <- function(search_name = NULL, search_address = NULL, location = NULL, radius = NULL,
-                               rankby = NULL, keyword = NULL, language = NULL, name = NULL,
-                               place_type = NULL, price_range = NULL, open_now = NULL,
-                               page_token = NULL, simplify = TRUE, curl_proxy = NULL,
+tidy_google_places <- function(search_name = NULL, search_address = NULL, search_lat = NULL, search_lng = NULL, keep_top = TRUE, location = NULL, radius = NULL, rankby = NULL, keyword = NULL, language = NULL, name = NULL, place_type = NULL, price_range = NULL, open_now = NULL, page_token = NULL, simplify = TRUE, curl_proxy = NULL,
                                key = get_api_key("places")) {
 
   # Combine name and address into single string
@@ -92,6 +89,8 @@ tidy_google_places <- function(search_name = NULL, search_address = NULL, locati
     # Create a new dummy row
     new_row <- tibble::tibble(search_name = search_name,
                               search_address = search_address,
+                              search_lat = nulltona(search_lat),
+                              search_lng = nulltona(search_lng),
                               place_id = place_id,
                               place_name = place_name,
                               address = address,
@@ -110,14 +109,12 @@ tidy_google_places <- function(search_name = NULL, search_address = NULL, locati
 
     google_results_flattened <- google_results_flattened %>%
       mutate(name_similarity = 1 - stringdist::stringdist(search_name, place_name, method = "jw"),
-             address_similarity = 1 - stringdist::stringdist(search_address, address, method = "jw"))
+             address_similarity = 1 - stringdist::stringdist(search_address, address, method = "jw"),
+             geo_distance_metres = great_circle(search_lat, search_lng, latitude, longitude),
+             geo_similarity_scaled = 1 - (geo_distance_metres - min(geo_distance_metres)) / (max(geo_distance_metres) - min(geo_distance_metres)))
   }
 
   # place_ids <- googleway::access_result(unformatted_result, "place") %>% tibble::enframe(name = NULL, value = "place_id")
-  # place_ids <- googleway::access_result(unformatted_result, "place_name") %>% tibble::enframe(name = NULL, value = "place_name")
-  # place_ids <- googleway::access_result(unformatted_result, "coordinates") %>% tibble::as_tibble()
-  #
-  # googleway::access_result(x, "place_name")
 
   google_results_flattened
 }
