@@ -15,10 +15,5 @@ Installation
                      "7Eleven", "Lincoln, Santa Monica",
                      "nothing location", "marina del rayyy")
   
- tidy_google_places()
-  newdata %>% 
-    group_by(id = row_number()) %>% 
-    nest() %>% 
-    mutate(d = map(data, ~tidy_google_places(.x$acc_name, .x$acc_address, key = my_key, keep_top = F))) %>%
-    unnest()
+  newdata %>% add_tidy_google_places(acc_name, acc_address, key = my_api_key)
 ```
