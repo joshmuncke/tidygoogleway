@@ -21,4 +21,6 @@ Imports:
     purrr,
     stringdist,
     tibble,
-    stringr
+    stringr,
+    furrr,
+    rlang

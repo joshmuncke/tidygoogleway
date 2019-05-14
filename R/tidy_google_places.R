@@ -35,7 +35,7 @@ tidy_google_places <- function(search_name = NULL,
   num_results <- length(unlisted_result$results.id)
 
   # Create a blank tibble for structured results
-  google_results_flattened <- tibble()
+  google_results_flattened <- tibble::tibble()
 
   for(i in 1:num_results) {
     # Create a new dummy row
@@ -57,11 +57,11 @@ tidy_google_places <- function(search_name = NULL,
                               n_results = num_results)
 
     # Bind this new row into our structured dataset
-    google_results_flattened <- google_results_flattened %>% bind_rows(new_row)
+    google_results_flattened <- google_results_flattened %>% dplyr::bind_rows(new_row)
 
     # Add similarity calculations
     google_results_flattened <- google_results_flattened %>%
-      mutate(name_distance = 0.0000001 + stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(place_name), method = "jw"),
+      dplyr::mutate(name_distance = 0.0000001 + stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(place_name), method = "jw"),
              address_distance = 0.0000001 + stringdist::stringdist(stringr::str_to_lower(search_address), stringr::str_to_lower(address), method = "jw"),
              geo_distance_metres = ifelse(is.na(great_circle(search_lat, search_lng, latitude, longitude)),0.0000001,great_circle(search_lat, search_lng, latitude, longitude)),
              # geo_similarity_scaled = 1 - (geo_distance_metres - min(geo_distance_metres)) / (max(geo_distance_metres) - min(geo_distance_metres)),
@@ -70,7 +70,7 @@ tidy_google_places <- function(search_name = NULL,
   }
 
   if(keep_top) {
-    google_results_flattened <- google_results_flattened %>% arrange(mean_similarity) %>% slice(1)
+    google_results_flattened <- google_results_flattened %>% dplyr::arrange(mean_similarity) %>% dplyr::slice(1)
   }
 
   # These helper functions exist in googleway
@@ -80,12 +80,35 @@ tidy_google_places <- function(search_name = NULL,
   google_results_flattened
 }
 
-
+#' Append tidy google places to a dataframe
+#'
+#' Appends the best matching google places result to
+#' a dataframe of lookup locations.
+#'
+#'@export
 add_tidy_google_places <- function(df,
                                  name,
                                  address,
                                  lat,
                                  lng,
                                  key) {
+#furrr::future_pmap_dfr()
+  name_field <- rlang::enquo(name)
+  address_field <- rlang::enquo(address)
+  lat_field <- rlang::enquo(lat)
+  lng_field <- rlang::enquo(lng)
 
+  search_df <- df %>% dplyr::select(search_name = !! name_field,
+                      search_address = !! address_field) %>%
+    dplyr::mutate(search_lat = NULL,
+                  search_lng = NULL,
+                  keep_top = TRUE,
+                  key = mykey)
+
+  # search_df
+  google_results <- search_df %>% furrr::future_pmap_dfr(tidy_google_places)
+  #
+  df %>% dplyr::bind_cols(google_results)
 }
+
+
