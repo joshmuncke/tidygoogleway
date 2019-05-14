@@ -95,7 +95,7 @@ tidy_google_places <- function(search_string = NULL, location = NULL, radius = N
                       # n_results = n_results)
 
     # Bind this new row into our structured dataset
-    google_results_flattened %<>% bind_rows(new_row)
+    google_results_flattened <- google_results_flattened %>% bind_rows(new_row)
   }
 
         # # Extract the key fields where they exist
