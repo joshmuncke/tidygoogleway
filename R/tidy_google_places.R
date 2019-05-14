@@ -75,24 +75,30 @@ tidy_google_places <- function(search_string = NULL, location = NULL, radius = N
   google_results_flattened <- tibble()
 
   for(i in 1:num_results) {
-    place_id <- unlisted_result$results.place_id[[i]]
-    place_name <- unlisted_result$results.name[[i]]
+    place_id <- tidygoogleway::nulltona(unlisted_result$results.place_id[[i]])
+    place_name <- tidygoogleway::nulltona(unlisted_result$results.name[[i]])
+    address <- tidygoogleway::nulltona(unlisted_result$results.formatted_address[[i]])
+    latitude <- tidygoogleway::nulltona(unlisted_result$results.geometry$location$lat[[i]])
+    longitude <- tidygoogleway::nulltona(unlisted_result$results.geometry$location$lng[[i]])
+    price_level <- tidygoogleway::nulltona(unlisted_result$results.price_level[[i]])
+    rating <- tidygoogleway::nulltona(unlisted_result$results.rating[[i]])
+    user_ratings_total <- tidygoogleway::nulltona(unlisted_result$results.user_ratings_total[[i]])
+    types <- tidygoogleway::nulltona(unlisted_result$results.types[[i]])
+    permanently_closed <- tidygoogleway::nulltona(unlisted_result$results.permanently_closed[[i]])
 
     # Create a new dummy row
     new_row <- tibble::tibble(place_id = place_id,
                               place_name = place_name,
+                              address = address,
+                              latitude = latitude,
+                              longitude = longitude,
+                              price_level = price_level,
+                              rating = rating,
+                              user_ratings_total = user_ratings_total,
+                              types = types,
+                              permanently_closed = permanently_closed,
                               result_number = i,
                               n_results = num_results)
-
-                      # address = address,
-                      # latitude = latitude,
-                      # longitude = longitude,
-                      # types = types,
-                      # price_level = price_level,
-                      # rating = rating,
-                      # permanently_closed = permanently_closed,
-                      # result_number = j,
-                      # n_results = n_results)
 
     # Bind this new row into our structured dataset
     google_results_flattened <- google_results_flattened %>% bind_rows(new_row)
