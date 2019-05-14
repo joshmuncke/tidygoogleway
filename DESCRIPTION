@@ -20,4 +20,5 @@ Imports:
     dplyr,
     purrr,
     stringdist,
-    tibble
+    tibble,
+    stringr

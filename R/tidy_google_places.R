@@ -16,8 +16,7 @@
 #' @param ... Other arguments passed to googleway
 #'
 #' @export
-tidy_google_places <- function(df,
-                               search_name = NULL,
+tidy_google_places <- function(search_name = NULL,
                                search_address = NULL,
                                search_lat = NULL,
                                search_lng = NULL,
@@ -62,9 +61,9 @@ tidy_google_places <- function(df,
 
     # Add similarity calculations
     google_results_flattened <- google_results_flattened %>%
-      mutate(name_distance = 0.0000001 + stringdist::stringdist(search_name, place_name, method = "jw"),
-             address_distance = 0.0000001 + stringdist::stringdist(search_address, address, method = "jw"),
-             geo_distance_metres = ifelse(isna(great_circle(search_lat, search_lng, latitude, longitude)),0.0000001,great_circle(search_lat, search_lng, latitude, longitude)),
+      mutate(name_distance = 0.0000001 + stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(place_name), method = "jw"),
+             address_distance = 0.0000001 + stringdist::stringdist(stringr::str_to_lower(search_address), stringr::str_to_lower(address), method = "jw"),
+             geo_distance_metres = ifelse(is.na(great_circle(search_lat, search_lng, latitude, longitude)),0.0000001,great_circle(search_lat, search_lng, latitude, longitude)),
              # geo_similarity_scaled = 1 - (geo_distance_metres - min(geo_distance_metres)) / (max(geo_distance_metres) - min(geo_distance_metres)),
              # geometric mean of distances
              mean_similarity = (name_distance * address_distance * geo_distance_metres)^(1/3))
@@ -79,4 +78,14 @@ tidy_google_places <- function(df,
   # place_ids <- googleway::access_result(unformatted_result, "place") %>% tibble::enframe(name = NULL, value = "place_id")
 
   google_results_flattened
+}
+
+
+add_tidy_google_places <- function(df,
+                                 name,
+                                 address,
+                                 lat,
+                                 lng,
+                                 key) {
+
 }
