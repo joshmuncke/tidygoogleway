@@ -58,11 +58,64 @@ tidy_google_places <- function(search_string = NULL, location = NULL, radius = N
                                rankby = NULL, keyword = NULL, language = NULL, name = NULL,
                                place_type = NULL, price_range = NULL, open_now = NULL,
                                page_token = NULL, simplify = TRUE, curl_proxy = NULL,
-                               key = get_api_key("places"), radar = NULL) {
+                               key = get_api_key("places")) {
 
-  googleway::google_places(search_string , location , radius ,
+  # Call googleway::google_places
+  unformatted_result <- googleway::google_places(search_string , location , radius ,
                            rankby , keyword , language , name ,
                            place_type , price_range , open_now ,
                            page_token , simplify, curl_proxy ,
-                           key, radar )
+                           key)
+
+  # Unlist this one level
+  unlisted_result <- unformatted_result %>% unlist(recursive = F)
+  num_results <- length(unlisted_result$results.id)
+
+  # Create a blank tibble for structured results
+  google_results_flattened <- tibble()
+
+  for(i in 1:num_results) {
+    place_id <- unlisted_result$results.place_id[[i]]
+    account_name <- unlisted_result$results.name[[i]]
+  }
+
+      # Loop over all results for each request
+      for(j in 1:n_results) {
+        # This should never be NULL
+        place_id <- store_results$place_id[[j]]
+
+        # Extract the key fields where they exist
+        account_name <- ifelse(is.null(store_results$name[[j]]), NA, store_results$name[[j]])
+        address <- ifelse(is.null(store_results$formatted_address[[j]]), NA, store_results$formatted_address[[j]])
+        latitude <- ifelse(is.null(store_results$geometry$location$lat[[j]]), NA, store_results$geometry$location$lat[[j]])
+        longitude <- ifelse(is.null(store_results$geometry$location$lng[[j]]), NA, store_results$geometry$location$lng[[j]])
+        rating <- ifelse(is.null(store_results$rating[[j]]), NA, store_results$rating[[j]])
+        price_level <- ifelse(is.null(store_results$price_level[[j]]), NA, store_results$price_level[[j]])
+        permanently_closed <- ifelse(is.null(store_results$permanently_closed[[j]]), NA, store_results$permanently_closed[[j]])
+        types <- ifelse(is.null(paste(store_results$types[[j]], collapse = ";")), NA, paste(store_results$types[[j]], collapse = ";"))
+
+        # Create a new dummy row
+        new_row <- tibble(compass_ID = compass_id,
+                          place_id = place_id,
+                          account_name = account_name,
+                          address = address,
+                          latitude = latitude,
+                          longitude = longitude,
+                          types = types,
+                          price_level = price_level,
+                          rating = rating,
+                          permanently_closed = permanently_closed,
+                          result_number = j,
+                          n_results = n_results)
+
+        # Bind this new row into our structured dataset
+        google_results_flattened %<>% bind_rows(new_row)
+      }
+    }
+
+    # place_ids <- googleway::access_result(unformatted_result, "place") %>% tibble::enframe(name = NULL, value = "place_id")
+    # place_ids <- googleway::access_result(unformatted_result, "place_name") %>% tibble::enframe(name = NULL, value = "place_name")
+    # place_ids <- googleway::access_result(unformatted_result, "coordinates") %>% tibble::as_tibble()
+    #
+    # googleway::access_result(x, "place_name")
 }
