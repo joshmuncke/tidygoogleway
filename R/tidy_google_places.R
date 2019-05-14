@@ -35,7 +35,7 @@ tidy_google_places <- function(search_name = NULL,
   num_results <- length(unlisted_result$results.id)
 
   # Create a blank tibble for structured results
-  google_results_flattened <- tibble()
+  google_results_flattened <- tibble::tibble()
 
   for(i in 1:num_results) {
     # Create a new dummy row
@@ -80,12 +80,34 @@ tidy_google_places <- function(search_name = NULL,
   google_results_flattened
 }
 
-
+#' Append tidy google places to a dataframe
+#'
+#' Appends the best matching google places result to
+#' a dataframe of lookup locations.
+#'
+#'@export
 add_tidy_google_places <- function(df,
                                  name,
                                  address,
                                  lat,
                                  lng,
                                  key) {
+#furrr::future_pmap_dfr()
+  name_field <- rlang::enquo(name)
+  address_field <- rlang::enquo(address)
+  lat_field <- rlang::enquo(lat)
+  lng_field <- rlang::enquo(lng)
 
+  search_df <- df %>% dplyr::select(search_name = !! name_field,
+                       search_address = !! address_field
+                       # search_lat = !! lat_field,
+                       # search_lng = !! lng_field,
+  ) %>% dplyr::mutate(key = mykey)
+
+  # search_df
+  google_results <- search_df %>% furrr::future_map_dfr(tidy_google_places)
+  #
+  google_results
 }
+
+

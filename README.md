@@ -9,10 +9,11 @@ Installation
 ------------
 
 ``` r
-  newdata <- tribble(~acc_name, ~acc_address,
+  newdata <- tibble::tribble(~acc_name, ~acc_address,
                      "Areal", "Santa Monica, CA 90405",
                      "Ralphs", "Marina Del Rey, CA 90292",
-                     "7Eleven", "Lincoln, Santa Monica")
+                     "7Eleven", "Lincoln, Santa Monica",
+                     "nothing location", "marina del rayyy")
   
  tidy_google_places()
   newdata %>% 
