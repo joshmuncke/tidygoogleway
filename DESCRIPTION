@@ -1,11 +1,12 @@
 Package: tidygoogleway
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
+Title: Quickly get and format Google Places API results tidily
+Version: 0.0.0.9000
 Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Maintainer: Josh Muncke <joshxthomas@gmail.com>
+Description: This package provides a wrapper around googleway
+    and stringdist to make it easy to get tabular results from
+    a Google Places API search.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
@@ -17,4 +18,5 @@ Imports:
     magrittr,
     googleway,
     dplyr,
-    purrr
+    purrr,
+    stringdist
