@@ -1,4 +1,4 @@
-#' Tidy Google Places
+#' Add Google Places data to a dataframe
 #'
 #' This function calls the Google Places API using the
 #' googleway::google_places function. It will return a single,
@@ -99,7 +99,6 @@ add_tidy_google_places <- function(df,
   lng_field <- rlang::enquo(lng)
 
   search_df <- df %>% dplyr::select(search_name = !! name_field,
-<<<<<<< HEAD
                       search_address = !! address_field) %>%
     dplyr::mutate(search_lat = NULL,
                   search_lng = NULL,
@@ -110,7 +109,6 @@ add_tidy_google_places <- function(df,
   google_results <- search_df %>% furrr::future_pmap_dfr(tidy_google_places)
   #
   df %>% dplyr::bind_cols(google_results)
-=======
                        search_address = !! address_field
                        # search_lat = !! lat_field,
                        # search_lng = !! lng_field,
@@ -120,7 +118,9 @@ add_tidy_google_places <- function(df,
   google_results <- search_df %>% furrr::future_map_dfr(tidy_google_places)
   #
   google_results
->>>>>>> 77d42c77edd565571a8d968d69ff1a6f725f3d21
 }
 
-
+#' @export
+add_google_places <- function(df, location_name, location_address, location_latitude, location_longitude, .key = Sys.getenv("GOOGLE_API_KEY"), .keep_all = FALSE, ...) {
+  df
+}

@@ -16,6 +16,11 @@ You can install tidygoogleway from Github using the following command:
 devtools::install_github("joshmuncke/tidygoogleway")
 ```
 
+Setup
+-----
+
+To use this package you'll need a Google Places [API key](https://developers.google.com/places/web-service/get-api-key). tidygoogleway will look for this key in your environment variables or you can pass it in using `key`.
+
 Usage
 -----
 
@@ -24,11 +29,9 @@ The `add_google_places` function expects a dataframe with (at the minimum) a fie
 Often a Google Places search will return multiple results. In this instance `add_google_places` function will perform a string similarity comparison on the account name and address between the values you provide and the values returned from Google. If you supply latitude and longitude fields then `add_google_places` will factor a geographic distance into this calculation too.
 
 ``` r
-  newdata <- tibble::tribble(~acc_name, ~acc_address,
-                     "Areal", "Santa Monica, CA 90405",
-                     "Ralphs", "Marina Del Rey, CA 90292",
-                     "7Eleven", "Lincoln, Santa Monica",
-                     "nothing location", "marina del rayyy")
+# The macdonalds dataframe contains the name and address of 11 McDonalds locations in Los Angeles
+mcdonalds %>% 
+  add_google_places(name, address, key = my_api_key)
   
  tidy_google_places()
   newdata %>% 
