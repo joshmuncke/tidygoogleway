@@ -107,6 +107,7 @@ add_tidy_google_places <- function(df,
 
   # search_df
   google_results <- search_df %>% furrr::future_pmap_dfr(tidy_google_places)
+<<<<<<< HEAD
   #
   df %>% dplyr::bind_cols(google_results)
                        search_address = !! address_field
@@ -118,6 +119,11 @@ add_tidy_google_places <- function(df,
   google_results <- search_df %>% furrr::future_map_dfr(tidy_google_places)
   #
   google_results
+=======
+
+  # Bind original data with search results
+  df %>% dplyr::bind_cols(google_results)
+>>>>>>> 628aa9db4a2e10e1c08197a70153c8f12bcedf64
 }
 
 #' @export

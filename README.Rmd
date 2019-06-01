@@ -40,12 +40,7 @@ Often a Google Places search will return multiple results. In this instance `add
 mcdonalds %>% 
   add_google_places(name, address, key = my_api_key)
   
- tidy_google_places()
-  newdata %>% 
-    group_by(id = row_number()) %>% 
-    nest() %>% 
-    mutate(d = map(data, ~tidy_google_places(.x$acc_name, .x$acc_address, key = my_key, keep_top = F))) %>%
-    unnest()
+  newdata %>% add_tidy_google_places(acc_name, acc_address, key = my_api_key)
 ```
 
 By default, only the best matching account will be returned (so the number of rows in will be the same as the number of rows out). If you wish to override this behaviour and return multiple results use `.keep_all = T`.
