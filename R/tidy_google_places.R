@@ -81,13 +81,14 @@ get_tidy_google_place <- function(search_name = NULL,
   # Use geo-mean so we can average distance measures on different scales
   # Helper function will ignore any NAs
   google_results_flattened <- google_results_flattened %>%
-    dplyr::mutate(mean_distance = gm_mean(c(name_distance, address_distance, geo_distance_metres)))
+    dplyr::mutate(mean_distance = gm_mean(c(name_distance, address_distance, geo_distance_metres)))%>%
+    dplyr::ungroup()
 
   # Filter just the top result by our similarity metric (if asked for)
   # We check the variance of the similarities because if that is 0 (i.e. all sims are equal)
   #  then we don't want to do any re-ordering - pick the first one suggested by Google
-  if(!.keep_all) {
-    if(var(google_results_flattened$mean_distance == 0)) {
+  if(!.keep_all & nrow(google_results_flattened) > 1) {
+    if(var(google_results_flattened$mean_distance) == 0) {
       google_results_flattened <- google_results_flattened %>% dplyr::slice(1)
     }
     else {
@@ -100,6 +101,37 @@ get_tidy_google_place <- function(search_name = NULL,
 
 
 #' @export
-add_google_places <- function(df, search_name, search_address, search_latitude, search_longitude, key = googleway::get_api_key("places"), .keep_all = FALSE, ...) {
-  df
+add_google_places <- function(df, search_name, search_address, search_latitude, search_longitude, key = googleway:::get_api_key("places"), .keep_all = FALSE, ...) {
+  # Check that at least a name or address has been provided
+  if(missing(search_name) && missing(search_address)) {stop("You must provide a search name or address term", call. = F)}
+
+  # If either latitude or longitude is provided the other must be too
+  if(xor(missing(search_latitude), missing(search_longitude))) {stop("Cannot provide single geolocation co-ordinate", call. = F)}
+
+  # Get the input dataframe as supplied by user
+  if(missing(search_name)) { name = NULL }
+  else { name = enquo(search_name) }
+
+  # Get the input dataframe as supplied by user
+  if(missing(search_address)) { add = NULL }
+  else { add = enquo(search_address) }
+
+  # Get the input dataframe as supplied by user
+  if(missing(search_latitude)) { lat = NULL }
+  else { lat = enquo(search_latitude) }
+
+  # Get the input dataframe as supplied by user
+  if(missing(search_longitude)) { lng = NULL }
+  else { lng = enquo(search_longitude) }
+
+  # Rename input dataframe columns
+  working_df <- df %>%
+    dplyr::select(search_name = !!name,
+                  search_address = !!add,
+                  search_latitude = !!lat,
+                  search_longitude = !!lng) %>%
+    dplyr::mutate(key = key,
+                  .keep_all = .keep_all)
+
+  working_df %>% furrr::future_pmap_dfr(get_tidy_google_place)
 }
