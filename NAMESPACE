@@ -2,5 +2,5 @@
 
 export("%>%")
 export(add_google_places)
-export(tidy_google_places)
+export(get_tidy_google_place)
 importFrom(magrittr,"%>%")

@@ -2,6 +2,10 @@ nulltona <- function(x) {
   ifelse(purrr::is_null(x), NA, x)
 }
 
+nulltoblankstring <- function(x) {
+  ifelse(purrr::is_null(x), "", x)
+}
+
 # Converts degrees to radians
 deg2rad <- function(deg) {(deg * pi) / (180)}
 
