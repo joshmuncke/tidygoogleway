@@ -49,22 +49,22 @@ get_tidy_google_place <- function(search_name = NULL,
                               search_address = search_address,
                               search_latitude = nulltona(search_latitude),
                               search_longitude = nulltona(search_longitude),
-                              place_id = nulltona(unlisted_result$results.place_id[[i]]),
-                              place_name = nulltona(unlisted_result$results.name[[i]]),
-                              address = nulltona(unlisted_result$results.formatted_address[[i]]),
-                              latitude = nulltona(unlisted_result$results.geometry$location$lat[[i]]),
-                              longitude = nulltona(unlisted_result$results.geometry$location$lng[[i]]),
-                              viewport_ne_lat = nulltona(unlisted_result$results.geometry$viewport$northeast$lat[[i]]),
-                              viewport_ne_lng = nulltona(unlisted_result$results.geometry$viewport$northeast$lng[[i]]),
-                              viewport_sw_lat = nulltona(unlisted_result$results.geometry$viewport$southwest$lat[[i]]),
-                              viewport_sw_lng = nulltona(unlisted_result$results.geometry$viewport$southwest$lng[[i]]),
-                              price_level = nulltona(unlisted_result$results.price_level[[i]]),
-                              rating = nulltona(unlisted_result$results.rating[[i]]),
-                              user_ratings_total = nulltona(unlisted_result$results.user_ratings_total[[i]]),
-                              types = nulltona(unlisted_result$results.types[[i]]),
-                              permanently_closed = nulltona(unlisted_result$results.permanently_closed[[i]]),
-                              result_number = i,
-                              n_results = num_results)
+                              google_place_id = nulltona(unlisted_result$results.place_id[[i]]),
+                              google_place_name = nulltona(unlisted_result$results.name[[i]]),
+                              google_address = nulltona(unlisted_result$results.formatted_address[[i]]),
+                              google_latitude = nulltona(unlisted_result$results.geometry$location$lat[[i]]),
+                              google_longitude = nulltona(unlisted_result$results.geometry$location$lng[[i]]),
+                              google_viewport_ne_lat = nulltona(unlisted_result$results.geometry$viewport$northeast$lat[[i]]),
+                              google_viewport_ne_lng = nulltona(unlisted_result$results.geometry$viewport$northeast$lng[[i]]),
+                              google_viewport_sw_lat = nulltona(unlisted_result$results.geometry$viewport$southwest$lat[[i]]),
+                              google_viewport_sw_lng = nulltona(unlisted_result$results.geometry$viewport$southwest$lng[[i]]),
+                              google_price_level = nulltona(unlisted_result$results.price_level[[i]]),
+                              google_rating = nulltona(unlisted_result$results.rating[[i]]),
+                              google_user_ratings_total = nulltona(unlisted_result$results.user_ratings_total[[i]]),
+                              google_types = nulltona(unlisted_result$results.types[[i]]),
+                              google_permanently_closed = nulltona(unlisted_result$results.permanently_closed[[i]]),
+                              google_result_number = i,
+                              google_n_results = num_results)
 
     # Bind this new row into our structured dataset
     google_results_flattened <- google_results_flattened %>% dplyr::bind_rows(new_row)
@@ -73,9 +73,9 @@ get_tidy_google_place <- function(search_name = NULL,
   # Add similarity calculations
   google_results_flattened <- google_results_flattened %>%
     dplyr::rowwise() %>%
-    dplyr::mutate(name_distance = ifelse(is.null(search_name), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(place_name), method = "jw"))) %>%
-    dplyr::mutate(address_distance = ifelse(is.null(search_address), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_address), stringr::str_to_lower(address), method = "jw"))) %>%
-    dplyr::mutate(geo_distance_metres = ifelse(!is.numeric(search_latitude) | !is.numeric(search_longitude), NA_real_, great_circle(search_latitude, search_longitude, latitude, longitude)))
+    dplyr::mutate(name_distance = ifelse(is.null(search_name), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(google_place_name), method = "jw"))) %>%
+    dplyr::mutate(address_distance = ifelse(is.null(search_address), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_address), stringr::str_to_lower(google_address), method = "jw"))) %>%
+    dplyr::mutate(geo_distance_metres = ifelse(!is.numeric(search_latitude) | !is.numeric(search_longitude), NA_real_, great_circle(search_latitude, search_longitude, google_latitude, google_longitude)))
 
   # Now calculate the geometric mean of these three distance metrics
   # Use geo-mean so we can average distance measures on different scales
@@ -100,6 +100,21 @@ get_tidy_google_place <- function(search_name = NULL,
 }
 
 
+#' Append Google Places data to a dataframe
+#'
+#' This function takes a dataframe containing location information and
+#' returns the same dataframe with additional enriched Google Places data.
+#' If multiple results are found they will be compared/selected using
+#' string similarity and geographic distance.
+#'
+#' @param search_name Field containing the name of the location
+#' @param search_address Field containing the address of the location
+#' @param search_latitude Field containing the latitude of the location (for distance comparison)
+#' @param search_longitude Field containing the longitude of the location (for distance comparison)
+#' @param key A valid Google Developers Places API key.
+#' @param .keep_all Toggle whether multiple results will be returned (if found)
+#' @param ... Other arguments passed to googleway::google_places
+#'
 #' @export
 add_google_places <- function(df, search_name, search_address, search_latitude, search_longitude, key = googleway:::get_api_key("places"), .keep_all = FALSE, ...) {
   # Check that at least a name or address has been provided
@@ -133,5 +148,19 @@ add_google_places <- function(df, search_name, search_address, search_latitude, 
     dplyr::mutate(key = key,
                   .keep_all = .keep_all)
 
-  working_df %>% furrr::future_pmap_dfr(get_tidy_google_place)
+  # Map the get_tidy_google_place function to our working dataframe
+  working_df <- working_df %>%
+    furrr::future_pmap_dfr(get_tidy_google_place, .id = "row_number", .progress = TRUE) %>%
+    mutate(row_number = as.integer(row_number))
+
+  # Check for clashing variable names
+  matching_names <- intersect(names(df), names(working_df))
+  if(length(matching_names) > 0) warning("Overlapping column names between input data and Google results - columns will be renamed", call. = F)
+
+  results_df <- df %>%
+    mutate(row_number = row_number()) %>%
+    left_join(working_df, by = "row_number") %>%
+    select(-row_number, -search_name, -search_address, -search_latitude, -search_longitude)
+
+  results_df
 }

@@ -9,6 +9,8 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+
+googleway::set_key("Enter API key")
 ```
 # tidygoogleway
 
@@ -27,20 +29,42 @@ devtools::install_github("joshmuncke/tidygoogleway")
 
 ## Setup
 
-To use this package you'll need a Google Places [API key](https://developers.google.com/places/web-service/get-api-key). tidygoogleway will look for this key in your environment variables or you can pass it in using `key`.
+To use this package you'll need a Google Places [API key](https://developers.google.com/places/web-service/get-api-key). You can save this key to your environment variables using `googleway::set_key` and it will be automatically picked up by `tidygoogleway`.
+
+```{r key, eval = F}
+googleway::set_key("<YOUR API KEY>")
+```
 
 ## Usage
 
 The `add_google_places` function expects a dataframe with (at the minimum) a field containing the name and address of the locations you wish to add Google Places data to. It will return a dataframe with the relevant Places data appended (i.e. it's pipe-able).
 
-Often a Google Places search will return multiple results. In this instance `add_google_places` function will perform a string similarity comparison on the account name and address between the values you provide and the values returned from Google. If you supply latitude and longitude fields then `add_google_places` will factor a geographic distance into this calculation too. 
+Often a Google Places search will return multiple results. In this instance `add_google_places` function will perform a string similarity comparison on the location name and address between the values you provide and the values returned from Google. If you supply latitude and longitude fields then `add_google_places` will factor a geographic distance into this calculation too. 
 
-```{r demo, eval=FALSE}
+```{r demo}
+library(dplyr)
+library(magrittr)
+library(furrr)
+library(purrr)
+library(tidygoogleway)
+
 # The macdonalds dataframe contains the name and address of 11 McDonalds locations in Los Angeles
-mcdonalds %>% 
-  add_google_places(name, address, key = my_api_key)
-  
-  newdata %>% add_google_places(acc_name, acc_address, key = my_api_key)
+mcdonalds %>% head(5)
+
+# Now add Google Places data to our dataframe
+enriched <- mcdonalds %>% add_google_places(name, address, radar = F)
+```
+```{r view enriched}
+enriched %>% select(name, address, google_place_id, google_rating)
 ```
 
-By default, only the best matching account will be returned (so the number of rows in will be the same as the number of rows out). If you wish to override this behaviour and return multiple results use `.keep_all = T`.
+
+By default, only the best matching location will be returned (so the number of rows in will be the same as the number of rows out). If you wish to override this behaviour and return multiple results use `.keep_all = T`.
+
+Note that if you use the default `.keep_all = T` you may end up with more rows than you started with. These can be filtered using the `mean_distance` column (geometric mean of geo-distance and string distance) or `google_result_number` (ordering of results from Google Places API).
+
+## Parallel processing
+
+Often for these kinds of use cases you are iterating over a large number of locations. To speed this process up (and provide progress visibility) `add_google_places` utilizes the `furrr` library.
+
+**N.B. In order to make use of the parallel processing capabilities you must set `plan(multiprocess)` prior to running the `add_google_places` command. This syntax should work on Windows and Mac.**
