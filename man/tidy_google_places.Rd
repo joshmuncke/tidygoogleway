@@ -2,7 +2,7 @@
 % Please edit documentation in R/tidy_google_places.R
 \name{tidy_google_places}
 \alias{tidy_google_places}
-\title{Tidy Google Places}
+\title{Add Google Places data to a dataframe}
 \usage{
 tidy_google_places(search_name = NULL, search_address = NULL,
   search_lat = NULL, search_lng = NULL, keep_top = TRUE,

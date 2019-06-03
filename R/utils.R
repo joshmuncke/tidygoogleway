@@ -9,3 +9,15 @@ deg2rad <- function(deg) {(deg * pi) / (180)}
 great_circle <- function(lat1, lng1, lat2, lng2) {
   6371000 * acos(cos(deg2rad(90 - lat1)) * cos(deg2rad(90 - lat2)) + sin(deg2rad(90 - lat1)) * sin(deg2rad(90 - lat2)) * cos(deg2rad(lng1 - lng2)))
 }
+
+#' Pipe operator
+#'
+#' See \code{magrittr::\link[magrittr]{\%>\%}} for details.
+#'
+#' @name %>%
+#' @rdname pipe
+#' @keywords internal
+#' @export
+#' @importFrom magrittr %>%
+#' @usage lhs \%>\% rhs
+NULL

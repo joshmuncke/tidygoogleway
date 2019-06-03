@@ -20,8 +20,8 @@ tidy_google_places <- function(search_name = NULL,
                                search_address = NULL,
                                search_lat = NULL,
                                search_lng = NULL,
-                               keep_top = TRUE,
-                               key = NULL,
+                               .keep_top = TRUE,
+                               .key = NULL,
                                ...) {
 
   # Combine name and address into single string
@@ -80,51 +80,6 @@ tidy_google_places <- function(search_name = NULL,
   google_results_flattened
 }
 
-#' Append tidy google places to a dataframe
-#'
-#' Appends the best matching google places result to
-#' a dataframe of lookup locations.
-#'
-#'@export
-add_tidy_google_places <- function(df,
-                                 name,
-                                 address,
-                                 lat,
-                                 lng,
-                                 key) {
-#furrr::future_pmap_dfr()
-  name_field <- rlang::enquo(name)
-  address_field <- rlang::enquo(address)
-  lat_field <- rlang::enquo(lat)
-  lng_field <- rlang::enquo(lng)
-
-  search_df <- df %>% dplyr::select(search_name = !! name_field,
-                      search_address = !! address_field) %>%
-    dplyr::mutate(search_lat = NULL,
-                  search_lng = NULL,
-                  keep_top = TRUE,
-                  key = mykey)
-
-  # search_df
-  google_results <- search_df %>% furrr::future_pmap_dfr(tidy_google_places)
-<<<<<<< HEAD
-  #
-  df %>% dplyr::bind_cols(google_results)
-                       search_address = !! address_field
-                       # search_lat = !! lat_field,
-                       # search_lng = !! lng_field,
-  ) %>% dplyr::mutate(key = mykey)
-
-  # search_df
-  google_results <- search_df %>% furrr::future_map_dfr(tidy_google_places)
-  #
-  google_results
-=======
-
-  # Bind original data with search results
-  df %>% dplyr::bind_cols(google_results)
->>>>>>> 628aa9db4a2e10e1c08197a70153c8f12bcedf64
-}
 
 #' @export
 add_google_places <- function(df, location_name, location_address, location_latitude, location_longitude, .key = Sys.getenv("GOOGLE_API_KEY"), .keep_all = FALSE, ...) {
