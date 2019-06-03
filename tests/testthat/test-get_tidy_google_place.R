@@ -1,5 +1,5 @@
 test_that("Seach text must be provided", {
-  expect_error(get_tidy_google_place(), "You must provide a search term to Google Places")
+  expect_error(get_tidy_google_place(), "You must provide a search name or address term")
 })
 
 test_that("Cannot provide a single latitude or longitude only", {

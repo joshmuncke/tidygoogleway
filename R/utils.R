@@ -1,9 +1,22 @@
+# For handling NULLs in places search results
 nulltona <- function(x) {
   ifelse(purrr::is_null(x), NA, x)
 }
 
+# For handling NULLs in search terms
 nulltoblankstring <- function(x) {
   ifelse(purrr::is_null(x), "", x)
+}
+
+# For calculating similarity across string/geo distances
+gm_mean = function(x) {
+  # Remove NAs
+  x_no_na <- x[!is.na(x)]
+
+  # Add a v small amount (to prevent zeros/perfect matches from killing the average)
+  x_shifted <- x_no_na + 1E-9
+
+  exp(sum(log(x_shifted), na.rm = TRUE) / length(x_shifted))
 }
 
 # Converts degrees to radians

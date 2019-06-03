@@ -1,9 +1,9 @@
-#' Add Google Places data to a dataframe
+#' Get tidy Google Places information for a single location
 #'
 #' This function calls the Google Places API using the
 #' googleway::google_places function. It will return a single,
 #' tidy dataframe instead of a json object. Result selection
-#' is done using string distance similarity.
+#' is done using string and geographic distances.
 #'
 #' @param search_name The name of the place to search
 #' @param search_address The address (partial or full) of the place to search
@@ -11,7 +11,7 @@
 #' distance matching, not radial search)
 #' @param search_longitude The latitude of the place to search (note - only used for
 #' distance matching, not radial search)
-#' @param key \code{string} A valid Google Developers Places API key.
+#' @param key A valid Google Developers Places API key.
 #' @param .keep_all Toggle whether multiple results will be returned (if found)
 #' @param ... Other arguments passed to googleway::google_places
 #'
@@ -25,7 +25,7 @@ get_tidy_google_place <- function(search_name = NULL,
                                ...) {
 
   # Location name and address must be provided
-  if(is.null(search_name) && is.null(search_address)) {stop("You must provide a search term to Google Places", call. = F)}
+  if(is.null(search_name) && is.null(search_address)) {stop("You must provide a search name or address term", call. = F)}
 
   # If either latitude or longitude is provided the other must be too
   if(xor(!is.numeric(search_latitude), !is.numeric(search_longitude))) {stop("Cannot provide single geolocation co-ordinate", call. = F)}
@@ -68,24 +68,32 @@ get_tidy_google_place <- function(search_name = NULL,
 
     # Bind this new row into our structured dataset
     google_results_flattened <- google_results_flattened %>% dplyr::bind_rows(new_row)
-
-    # Add similarity calculations
-    google_results_flattened <- google_results_flattened %>%
-      dplyr::mutate(name_distance = 0.0000001 + stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(place_name), method = "jw"),
-             address_distance = 0.0000001 + stringdist::stringdist(stringr::str_to_lower(search_address), stringr::str_to_lower(address), method = "jw"),
-             geo_distance_metres = ifelse(is.na(great_circle(search_latitude, search_longitude, latitude, longitude)),0.0000001,great_circle(search_latitude, search_longitude, latitude, longitude)),
-             # geo_similarity_scaled = 1 - (geo_distance_metres - min(geo_distance_metres)) / (max(geo_distance_metres) - min(geo_distance_metres)),
-             # geometric mean of distances
-             mean_similarity = (name_distance * address_distance * geo_distance_metres)^(1/3))
   }
 
+  # Add similarity calculations
+  google_results_flattened <- google_results_flattened %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(name_distance = ifelse(is.null(search_name), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(place_name), method = "jw"))) %>%
+    dplyr::mutate(address_distance = ifelse(is.null(search_address), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_address), stringr::str_to_lower(address), method = "jw"))) %>%
+    dplyr::mutate(geo_distance_metres = ifelse(!is.numeric(search_latitude) | !is.numeric(search_longitude), NA_real_, great_circle(search_latitude, search_longitude, latitude, longitude)))
+
+  # Now calculate the geometric mean of these three distance metrics
+  # Use geo-mean so we can average distance measures on different scales
+  # Helper function will ignore any NAs
+  google_results_flattened <- google_results_flattened %>%
+    dplyr::mutate(mean_distance = gm_mean(c(name_distance, address_distance, geo_distance_metres)))
+
+  # Filter just the top result by our similarity metric (if asked for)
+  # We check the variance of the similarities because if that is 0 (i.e. all sims are equal)
+  #  then we don't want to do any re-ordering - pick the first one suggested by Google
   if(!.keep_all) {
-    google_results_flattened <- google_results_flattened %>% dplyr::arrange(mean_similarity) %>% dplyr::slice(1)
+    if(var(google_results_flattened$mean_distance == 0)) {
+      google_results_flattened <- google_results_flattened %>% dplyr::slice(1)
+    }
+    else {
+      google_results_flattened <- google_results_flattened %>% dplyr::arrange(mean_distance) %>% dplyr::slice(1)
+    }
   }
-
-  # These helper functions exist in googleway
-  # Future version use them?
-  # place_ids <- googleway::access_result(unformatted_result, "place") %>% tibble::enframe(name = NULL, value = "place_id")
 
   google_results_flattened
 }

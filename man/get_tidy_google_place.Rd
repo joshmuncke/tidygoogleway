@@ -2,7 +2,7 @@
 % Please edit documentation in R/tidy_google_places.R
 \name{get_tidy_google_place}
 \alias{get_tidy_google_place}
-\title{Add Google Places data to a dataframe}
+\title{Get tidy Google Places information for a single location}
 \usage{
 get_tidy_google_place(search_name = NULL, search_address = NULL,
   search_latitude = NULL, search_longitude = NULL,
@@ -19,7 +19,7 @@ distance matching, not radial search)}
 \item{search_longitude}{The latitude of the place to search (note - only used for
 distance matching, not radial search)}
 
-\item{key}{\code{string} A valid Google Developers Places API key.}
+\item{key}{A valid Google Developers Places API key.}
 
 \item{.keep_all}{Toggle whether multiple results will be returned (if found)}
 
@@ -29,5 +29,5 @@ distance matching, not radial search)}
 This function calls the Google Places API using the
 googleway::google_places function. It will return a single,
 tidy dataframe instead of a json object. Result selection
-is done using string distance similarity.
+is done using string and geographic distances.
 }
