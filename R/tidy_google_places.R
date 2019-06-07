@@ -36,64 +36,97 @@ get_tidy_google_place <- function(search_name = NULL,
   # Call googleway::google_places
   unformatted_result <- googleway::google_places(search_string, key = key, ...)
 
-  # Unlist this one level
-  unlisted_result <- unformatted_result %>% unlist(recursive = F)
-  num_results <- length(unlisted_result$results.id)
-
   # Create a blank tibble for structured results
   google_results_flattened <- tibble::tibble()
 
-  for(i in 1:num_results) {
-    # Create a new dummy row
-    new_row <- tibble::tibble(search_name = search_name,
-                              search_address = search_address,
-                              search_latitude = nulltona(search_latitude),
-                              search_longitude = nulltona(search_longitude),
-                              google_place_id = nulltona(unlisted_result$results.place_id[[i]]),
-                              google_place_name = nulltona(unlisted_result$results.name[[i]]),
-                              google_address = nulltona(unlisted_result$results.formatted_address[[i]]),
-                              google_latitude = nulltona(unlisted_result$results.geometry$location$lat[[i]]),
-                              google_longitude = nulltona(unlisted_result$results.geometry$location$lng[[i]]),
-                              google_viewport_ne_lat = nulltona(unlisted_result$results.geometry$viewport$northeast$lat[[i]]),
-                              google_viewport_ne_lng = nulltona(unlisted_result$results.geometry$viewport$northeast$lng[[i]]),
-                              google_viewport_sw_lat = nulltona(unlisted_result$results.geometry$viewport$southwest$lat[[i]]),
-                              google_viewport_sw_lng = nulltona(unlisted_result$results.geometry$viewport$southwest$lng[[i]]),
-                              google_price_level = nulltona(unlisted_result$results.price_level[[i]]),
-                              google_rating = nulltona(unlisted_result$results.rating[[i]]),
-                              google_user_ratings_total = nulltona(unlisted_result$results.user_ratings_total[[i]]),
-                              google_types = nulltona(unlisted_result$results.types[[i]]),
-                              google_permanently_closed = nulltona(unlisted_result$results.permanently_closed[[i]]),
-                              google_result_number = i,
-                              google_n_results = num_results)
+  if(unformatted_result$status == 'OK') {
 
-    # Bind this new row into our structured dataset
-    google_results_flattened <- google_results_flattened %>% dplyr::bind_rows(new_row)
+    # Unlist this one level
+    unlisted_result <- unformatted_result %>% unlist(recursive = F)
+    num_results <- length(unlisted_result$results.id)
+
+    for(i in 1:num_results) {
+      # Create a new dummy row
+      new_row <- tibble::tibble(search_name = nulltona(search_name),
+                                search_address = nulltona(search_address),
+                                search_latitude = nulltona(search_latitude),
+                                search_longitude = nulltona(search_longitude),
+                                google_place_id = nulltona(unlisted_result$results.place_id[[i]]),
+                                google_place_name = nulltona(unlisted_result$results.name[[i]]),
+                                google_address = nulltona(unlisted_result$results.formatted_address[[i]]),
+                                google_latitude = nulltona(unlisted_result$results.geometry$location$lat[[i]]),
+                                google_longitude = nulltona(unlisted_result$results.geometry$location$lng[[i]]),
+                                google_viewport_ne_lat = nulltona(unlisted_result$results.geometry$viewport$northeast$lat[[i]]),
+                                google_viewport_ne_lng = nulltona(unlisted_result$results.geometry$viewport$northeast$lng[[i]]),
+                                google_viewport_sw_lat = nulltona(unlisted_result$results.geometry$viewport$southwest$lat[[i]]),
+                                google_viewport_sw_lng = nulltona(unlisted_result$results.geometry$viewport$southwest$lng[[i]]),
+                                google_price_level = nulltona(unlisted_result$results.price_level[[i]]),
+                                google_rating = nulltona(unlisted_result$results.rating[[i]]),
+                                google_user_ratings_total = nulltona(unlisted_result$results.user_ratings_total[[i]]),
+                                google_types = nulltona(unlisted_result$results.types[[i]]),
+                                google_permanently_closed = nulltona(unlisted_result$results.permanently_closed[[i]]),
+                                google_result_number = i,
+                                google_n_results = num_results)
+
+      # Bind this new row into our structured dataset
+      google_results_flattened <- google_results_flattened %>% dplyr::bind_rows(new_row)
+    }
+
+    # Add similarity calculations
+    google_results_flattened <- google_results_flattened %>%
+      dplyr::rowwise() %>%
+      dplyr::mutate(name_distance = ifelse(is.null(search_name), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(google_place_name), method = "jw"))) %>%
+      dplyr::mutate(address_distance = ifelse(is.null(search_address), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_address), stringr::str_to_lower(google_address), method = "jw"))) %>%
+      dplyr::mutate(geo_distance_metres = ifelse(!is.numeric(search_latitude) | !is.numeric(search_longitude), NA_real_, great_circle(search_latitude, search_longitude, google_latitude, google_longitude)))
+
+    # Now calculate the geometric mean of these three distance metrics
+    # Use geo-mean so we can average distance measures on different scales
+    # Helper function will ignore any NAs
+    google_results_flattened <- google_results_flattened %>%
+      dplyr::mutate(mean_distance = gm_mean(c(name_distance, address_distance, geo_distance_metres)))%>%
+      dplyr::ungroup()
+
+    # Filter just the top result by our similarity metric (if asked for)
+    # We check the variance of the similarities because if that is 0 (i.e. all sims are equal)
+    #  then we don't want to do any re-ordering - pick the first one suggested by Google
+    if(!.keep_all & nrow(google_results_flattened) > 1) {
+      if(var(google_results_flattened$mean_distance) == 0) {
+        google_results_flattened <- google_results_flattened %>% dplyr::slice(1)
+      }
+      else {
+        google_results_flattened <- google_results_flattened %>% dplyr::arrange(mean_distance) %>% dplyr::slice(1)
+      }
+    }
   }
 
-  # Add similarity calculations
-  google_results_flattened <- google_results_flattened %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(name_distance = ifelse(is.null(search_name), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(google_place_name), method = "jw"))) %>%
-    dplyr::mutate(address_distance = ifelse(is.null(search_address), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_address), stringr::str_to_lower(google_address), method = "jw"))) %>%
-    dplyr::mutate(geo_distance_metres = ifelse(!is.numeric(search_latitude) | !is.numeric(search_longitude), NA_real_, great_circle(search_latitude, search_longitude, google_latitude, google_longitude)))
+  else {
+    blank_row =  tibble::tibble(search_name = nulltona(search_name),
+                                search_address = nulltona(search_address),
+                                search_latitude = nulltona(search_latitude),
+                                search_longitude = nulltona(search_longitude),
+                                google_place_id = NA,
+                                google_place_name = NA,
+                                google_address = NA,
+                                google_latitude = NA,
+                                google_longitude = NA,
+                                google_viewport_ne_lat = NA,
+                                google_viewport_ne_lng = NA,
+                                google_viewport_sw_lat = NA,
+                                google_viewport_sw_lng = NA,
+                                google_price_level = NA,
+                                google_rating = NA,
+                                google_user_ratings_total = NA,
+                                google_types = NA,
+                                google_permanently_closed = NA,
+                                google_result_number = NA,
+                                google_n_results = 0,
+                                name_distance = NA,
+                                address_distance = NA,
+                                geo_distance_metres = NA,
+                                mean_distance = NA
+                                )
 
-  # Now calculate the geometric mean of these three distance metrics
-  # Use geo-mean so we can average distance measures on different scales
-  # Helper function will ignore any NAs
-  google_results_flattened <- google_results_flattened %>%
-    dplyr::mutate(mean_distance = gm_mean(c(name_distance, address_distance, geo_distance_metres)))%>%
-    dplyr::ungroup()
-
-  # Filter just the top result by our similarity metric (if asked for)
-  # We check the variance of the similarities because if that is 0 (i.e. all sims are equal)
-  #  then we don't want to do any re-ordering - pick the first one suggested by Google
-  if(!.keep_all & nrow(google_results_flattened) > 1) {
-    if(var(google_results_flattened$mean_distance) == 0) {
-      google_results_flattened <- google_results_flattened %>% dplyr::slice(1)
-    }
-    else {
-      google_results_flattened <- google_results_flattened %>% dplyr::arrange(mean_distance) %>% dplyr::slice(1)
-    }
+    google_results_flattened <- google_results_flattened %>% dplyr::bind_rows(blank_row)
   }
 
   google_results_flattened
