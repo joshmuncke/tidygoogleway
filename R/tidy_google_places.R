@@ -43,7 +43,7 @@ get_tidy_google_place <- function(search_name = NULL,
 
     # Unlist this one level
     unlisted_result <- unformatted_result %>% unlist(recursive = F)
-    num_results <- length(unlisted_result$results.id)
+    num_results <- length(unlisted_result$results.place_id)
 
     for(i in 1:num_results) {
       # Create a new dummy row
