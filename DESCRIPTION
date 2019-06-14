@@ -1,8 +1,8 @@
 Package: tidygoogleway
 Type: Package
 Title: Quickly get and format Google Places API results tidily
-Version: 0.0.0.9000
-Author: Who wrote it
+Version: 0.0.0.9001
+Author: Josh Muncke <joshxthomas@gmail.com>
 Maintainer: Josh Muncke <joshxthomas@gmail.com>
 Description: This package provides a wrapper around googleway
     and stringdist to make it easy to get tabular results from
