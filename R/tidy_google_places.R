@@ -77,7 +77,7 @@ get_tidy_google_place <- function(search_name = NULL,
       dplyr::rowwise() %>%
       dplyr::mutate(name_distance = ifelse(is.null(search_name), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_name), stringr::str_to_lower(google_place_name), method = "jw"))) %>%
       dplyr::mutate(address_distance = ifelse(is.null(search_address), NA_real_, stringdist::stringdist(stringr::str_to_lower(search_address), stringr::str_to_lower(google_address), method = "jw"))) %>%
-      dplyr::mutate(geo_distance_metres = ifelse(!is.numeric(search_latitude) | !is.numeric(search_longitude), NA_real_, great_circle(search_latitude, search_longitude, google_latitude, google_longitude)))
+      dplyr::mutate(geo_distance_metres = ifelse(!is.numeric(search_latitude) | !is.numeric(search_longitude) | !is.numeric(google_latitude) | !is.numeric(google_longitude), NA_real_, great_circle(search_latitude, search_longitude, google_latitude, google_longitude)))
 
     # Now calculate the geometric mean of these three distance metrics
     # Use geo-mean so we can average distance measures on different scales
