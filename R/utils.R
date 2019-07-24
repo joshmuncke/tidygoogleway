@@ -24,12 +24,17 @@ deg2rad <- function(deg) {(deg * pi) / (180)}
 
 # Calculates the great circle distance between two points in metres
 great_circle <- function(lat1, lng1, lat2, lng2) {
-  if(lat1 == lat2 && lng1 == lng2) {
-    0
+  if(missing(lat1) || missing(lat2) || missing(lng1) || missing(lng2) || is.na(lat1) || is.na(lat2) || is.na(lng1) || is.na(lng2)) {
+    distance <- NA_real_
+  }
+  else if(lat1 == lat2 && lng1 == lng2) {
+    distance <- 0
   }
   else {
-    6371000 * acos(cos(deg2rad(90 - lat1)) * cos(deg2rad(90 - lat2)) + sin(deg2rad(90 - lat1)) * sin(deg2rad(90 - lat2)) * cos(deg2rad(lng1 - lng2)))
+    distance <- 6371000 * acos(cos(deg2rad(90 - lat1)) * cos(deg2rad(90 - lat2)) + sin(deg2rad(90 - lat1)) * sin(deg2rad(90 - lat2)) * cos(deg2rad(lng1 - lng2)))
   }
+
+  distance
 }
 
 #' Pipe operator
